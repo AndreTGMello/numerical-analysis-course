@@ -1,9 +1,16 @@
-module Utils
+module utils
 implicit none
 
-pure procedure pprint_mat(M)
-		real, intent(in) :: M
-    real :: i,j
-end procedure
+contains
+	subroutine pprint_mat(matrix,m,n)
+	  integer :: i,j,m,n
+		real, dimension(m,n) :: matrix
 
-end module
+		! n = shape(M)
+
+		do i=lbound(matrix,1),ubound(matrix,1)
+			write(*,*) (matrix(i,j), j=lbound(matrix,2), ubound(matrix,2))
+		end do
+	end subroutine
+
+end module utils
