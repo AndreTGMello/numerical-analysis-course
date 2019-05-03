@@ -1,4 +1,4 @@
-program bm_ge
+module bm_ge
   ! Program for banded matrix gauss elimination
   use utils
 
@@ -7,25 +7,20 @@ program bm_ge
   !---------------
   ! Variables
   !---------------
-  real, dimension(:,:), allocatable :: matrix
-  integer :: i,j,m,n,k
+!  integer :: i,j
 
   !---------------
-  ! Procedures
+  ! Logic
   !---------------
-  print *, "Enter square matrix number of rows/columns:"
-  read *, m
-  print *, "Enter number of diagonals:"
-  read *, n
-  allocate(matrix(m,n))
+  contains
+    function solve_banded_matrix(A,b,m,n) result(x)
+      integer, intent(in) :: m,n
+      real, dimension(m,m), intent(in) :: A
+      real, dimension(m), intent(in) :: b
+      real, dimension(m) :: x
+      ! m = rows of A = square matrix row/col numbers
+      ! n = cols of A = number of diagonals
+      x = b
+    end function
 
-  do i=1,m
-    do j=1,n
-      matrix(i,j)=i+j
-    end do
-  end do
-
-  call pprint_mat(matrix,m,n)
-
-  deallocate(matrix)
-end program bm_ge
+end module bm_ge
