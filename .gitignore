@@ -3,3 +3,8 @@
 *.o
 *.mod
 main
+
+
+# Util #
+########
+cr.sh
