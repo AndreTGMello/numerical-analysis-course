@@ -4,9 +4,9 @@ use utils
 
 implicit none
 
-type diagonal
-    real, allocatable :: d(:)
-endtype diagonal
+type row
+    real, allocatable :: r(:)
+endtype row
 
 !---------------
 ! Variables
@@ -14,7 +14,7 @@ endtype diagonal
 
 integer :: i,j,k,l,m,n,ub,lb
 real :: b(5), multiplier
-type(diagonal), allocatable :: D(:)
+type(row), allocatable :: A(:)
 
 !---------------
 ! Logic
@@ -27,59 +27,28 @@ lb = 2
 ! Square matrix size
 m = 4
 
-allocate(D(1+lb+ub))
+allocate(A(m))
 
-! Allocate main diagonal (i = j)
-allocate(D(1)%d(m))
-! Allocate lower band diagonals
-do i = 1, lb
-    allocate(D(i+1)%d(m-i))
-end do
-! Allocate upper band diagonals
-do i = 1, ub
-    allocate(D(lb+1+i)%d(m-i))
+do i = 1, m
+    if ( i == 1 .or. i == m ) then
+        allocate(A(i)%r(ub+1))
+    else
+        allocate(A(i)%r(lb+ub+1))
+    end if
 end do
 
-do i = 1, size(D, dim=1)
+do i = 1, size(A, dim=1)
 	print *, "!-------------------",char(10)
-    do j = 1, size(D(i)%d(:))
-        print *, D(i)%d(j)
+    do j = 1, size(A(i)%r(:))
+        print *, A(i)%r(j)
     end do
 	print *, "!-------------------",char(10)
-end do
-
-! Gauss Elimination
-do i = 1, m-1
-    ! For each lower diagonal, do:
-    do j = 2, lb+1
-        multiplier = D(j)%d(i)/D(1)%d(i)
-        D(j)%d(i) = 0
-        ! For each upper diagonal, subtract from the diagonal below:
-        do k = 1+lb+1, 1+lb+ub
-            n = 0
-            m = k
-            ! If right below we have the main diagonal, the pattern is:
-            ! d[p,q] where p in the range [1,lb]; q = i+1
-
-            ! However if right below D(k) we have an upper diagonal, pattern is:
-            ! d[p,q] where p in the range [k-1,lb+1]; q = [i+1,?]
-            ! And if it reaches the main diagonal, the pattern becomes:
-            !
-            if ( k == 1+lb+1 ) then
-                D()%(i+1) = D(1)%d(i+1) - multiplier*D(k)%d(i)
-            else
-                m = m - 1
-                n = n + 1
-                D(m)%(n) = D(m)%(n) - multiplier*D(k)%d(i)
-            end if
-        end do
-    end do
 end do
 
 !call pprint_mat(A,m,k)
-do i=1, size(D)
-    deallocate(D(i)%d)
+do i=1, size(A)
+    deallocate(A(i)%r)
 end do
-deallocate(D)
+deallocate(A)
 
 end program main
