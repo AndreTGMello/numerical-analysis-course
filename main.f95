@@ -56,7 +56,22 @@ do i = 1, m-1
         D(j)%d(i) = 0
         ! For each upper diagonal, subtract from the diagonal below:
         do k = 1+lb+1, 1+lb+ub
-            D(mod(k-1,lb+1))%(i+1) = D(mod())%d(i+1) - multiplier*D(k)%d(i)
+            n = 0
+            m = k
+            ! If right below we have the main diagonal, the pattern is:
+            ! d[p,q] where p in the range [1,lb]; q = i+1
+
+            ! However if right below D(k) we have an upper diagonal, pattern is:
+            ! d[p,q] where p in the range [k-1,lb+1]; q = [i+1,?]
+            ! And if it reaches the main diagonal, the pattern becomes:
+            !
+            if ( k == 1+lb+1 ) then
+                D()%(i+1) = D(1)%d(i+1) - multiplier*D(k)%d(i)
+            else
+                m = m - 1
+                n = n + 1
+                D(m)%(n) = D(m)%(n) - multiplier*D(k)%d(i)
+            end if
         end do
     end do
 end do
