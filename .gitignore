@@ -4,6 +4,10 @@
 *.mod
 main
 
+# Tests #
+#########
+*.test
+
 
 # Util #
 ########
