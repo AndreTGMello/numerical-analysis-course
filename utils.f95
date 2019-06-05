@@ -6,23 +6,35 @@ type col
 endtype col
 
 contains
-	subroutine pprint_mat(matrix,m,n)
+	function close(a,b,tol)
+		real, intent(in) :: a,b,tol
+		logical :: close
+		close = .false.
+		if ( abs(a-b) < tol ) then
+			close = .true.
+		end if
+	end function close
+
+	subroutine pprint_mat(matrix)
 	  integer :: i,j,m,n
-		real, dimension(m,n) :: matrix
+		real, intent(in) :: matrix(:,:)
+		m = size(matrix, dim=1)
+		n = size(matrix, dim=2)
 
 		! n = shape(M)
-		print *, "!-------------------"
+		write(*,*) "!-------------------"
 		do i=lbound(matrix,1),ubound(matrix,1)
 			write(*,*) (matrix(i,j), j=lbound(matrix,2), ubound(matrix,2))
 		end do
-		print *, "!-------------------",char(10)
+		write(*,*) "!-------------------"
 	end subroutine
 
-	subroutine pprint_band(Row,ms,lb,ub)
+	subroutine pprint_band(Row,lb,ub)
 		integer :: i,j,ms,lb,ub
-		type(col) :: Row(ms)
+		type(col), allocatable, intent(in) :: Row(:)
+		ms = size(Row)
 		write(*,*)
-		write(*,*) "----- Matrix -----"
+		write(*,*) "!-------------------"
 		write(*,*)
 		do i = 1, ms
 			if ( i < lb+1 ) then
@@ -42,13 +54,14 @@ contains
 			end if
 			write(*,*)
 		end do
+		write(*,*) "!-------------------"
 		write(*,*)
 	end subroutine
 
-	subroutine pprint_array(b,m)
+	subroutine pprint_array(b)
 		integer :: i,m
-		real :: b(m)
-
+		real, intent(in) :: b(:)
+		m = size(b)
 		write(*,*)
 		write(*,*) "----- Array -----"
 		write(*,*)
@@ -57,4 +70,33 @@ contains
 		end do
 		write(*,*)
 	end subroutine
+
+!TODO inner_product_wrapper
+
+!  function inner_product_wrapper(x)
+!    real, intent(out) :: inner_product_wrapper
+!    inner_product_wrapper = inner_product()
+!  end function inner_product_wrapper
+
+  function inner_product(phi_i, phi_j, dphi_i, dphi_j, q, k, x)
+		real :: inner_product
+    real, intent(in) :: x
+    real, external :: phi_i, phi_j, dphi_i, dphi_j, q, k
+
+!		interface
+!			function phi_i(x)
+!				real, intent(in) :: x
+!				real, intent(out) :: phi_i
+!			end function
+!		end interface
+!		interface
+!			function phi_j(x)
+!				real, intent(in) :: x
+!				real, intent(out) :: phi_j
+!			end function
+!		end interface
+
+
+		inner_product = q(x) * dphi_i(x) * dphi_j(x) + k(x) + phi_i(x) + phi_j(x)
+  end function inner_product
 end module utils
