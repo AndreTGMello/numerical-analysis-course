@@ -23,16 +23,28 @@ module num_integration
       real, external :: f
       real :: h
       integer, intent(in) :: k
-      integer :: i
+      integer :: i,j,m,np
       real :: romberg
 
       h = b - a
       allocate(r(k))
 
-      do i = 1,k
-        r(i) = trapezoid(f, a, b, h/2**(i-1))
+      r(1) = h*(f(a)+f(b))/2
+      np = 1
+      do i = 2,k
+        h = h/2
+        r(i) = r(i-1)/2
+        do j = 1,np
+          r(i) = r(i) + h*f(a+(2*i-1)*h)
+        end do
+        m = 1
+        do j = 2,i
+          m = 4*m
+          r(i-j+1) = (m*r(i-j+2)-r(i-j+1))/(m-1)
+        end do
+        np = np*2
       end do
-      romberg = r(size(r))
+      romberg = r(1)
     end function romberg
 
 end module num_integration
