@@ -35,7 +35,7 @@ module num_integration
         h = h/2
         r(i) = r(i-1)/2
         do j = 1,np
-          r(i) = r(i) + h*f(a+(2*i-1)*h)
+          r(i) = r(i) + h*f(a+(2*j-1)*h)
         end do
         m = 1
         do j = 2,i
