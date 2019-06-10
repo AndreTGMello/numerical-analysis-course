@@ -138,8 +138,9 @@ module ogpf
 
     private
 
-    public arange, linspace, meshgrid, wp
+    public arange, linspace, meshgrid
     public num2str
+    private wp
 
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! select precision

@@ -1,13 +1,22 @@
 module utils
 implicit none
 
+! wp = working precision
+! wp is set to double precision
+integer, parameter :: wp = kind(1.0d0)
+
+! Data structure for storing banded matrices
 type col
-    real, allocatable :: Col(:)
+  real(wp), allocatable :: Col(:)
 endtype col
 
 contains
+
+	! Identity (==) operations won't work with floating point
+	! arithmetic. In this case, the close function verifies
+	! wether two real numbers are close enough (according to tol)
 	function close(a,b,tol)
-		real, intent(in) :: a,b,tol
+		real(wp), intent(in) :: a,b,tol
 		logical :: close
 		close = .false.
 		if ( abs(a-b) < tol ) then
@@ -15,9 +24,10 @@ contains
 		end if
 	end function close
 
+	! Subroutine for pretty printing matrices
 	subroutine pprint_mat(matrix)
 	  integer :: i,j,m,n
-		real, intent(in) :: matrix(:,:)
+		real(wp), intent(in) :: matrix(:,:)
 		m = size(matrix, dim=1)
 		n = size(matrix, dim=2)
 
@@ -29,6 +39,7 @@ contains
 		write(*,*) "!-------------------"
 	end subroutine
 
+	! Subroutine for pretty printing banded matrices
 	subroutine pprint_band(Row,lb,ub)
 		integer :: i,j,ms,lb,ub
 		type(col), allocatable, intent(in) :: Row(:)
@@ -58,9 +69,11 @@ contains
 		write(*,*)
 	end subroutine
 
+
+	! Subroutine for pretty printing arrays
 	subroutine pprint_array(b)
 		integer :: i,m
-		real, intent(in) :: b(:)
+		real(wp), intent(in) :: b(:)
 		m = size(b)
 		write(*,*)
 		write(*,*) "----- Array -----"
@@ -79,9 +92,9 @@ contains
 !  end function inner_product_wrapper
 
   function inner_product(phi_i, phi_j, dphi_i, dphi_j, q, k, x)
-		real :: inner_product
-    real, intent(in) :: x
-    real, external :: phi_i, phi_j, dphi_i, dphi_j, q, k
+		real(wp) :: inner_product
+    real(wp), intent(in) :: x
+    real(wp), external :: phi_i, phi_j, dphi_i, dphi_j, q, k
 
 !		interface
 !			function phi_i(x)
