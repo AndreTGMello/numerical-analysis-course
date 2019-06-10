@@ -1,14 +1,15 @@
 module num_integration
+  use utils, only : wp
 
   implicit none
 
   contains
 
     function trapezoid(f,a,b,h)
-      real, intent(in) :: a,b,h
-      real, external :: f
+      real(wp), intent(in) :: a,b,h
+      real(wp), external :: f
       integer :: i,j,steps
-      real :: trapezoid
+      real(wp) :: trapezoid
 
       steps = (b-a)/h
       trapezoid = 0
@@ -18,13 +19,13 @@ module num_integration
     end function trapezoid
 
     function romberg(f,a,b,k)
-      real, intent(in) :: a,b
-      real, allocatable :: r(:)
-      real, external :: f
-      real :: h
+      real(wp), intent(in) :: a,b
+      real(wp), allocatable :: r(:)
+      real(wp), external :: f
+      real(wp) :: h
       integer, intent(in) :: k
       integer :: i,j,m,np
-      real :: romberg
+      real(wp) :: romberg
 
       h = b - a
       allocate(r(k))
