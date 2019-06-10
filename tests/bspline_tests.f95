@@ -8,8 +8,8 @@ implicit none
 ! Variables
 !---------------
 integer :: i,j,total_tests, passed_tests
-real, allocatable :: y(:),x(:)
-real :: result,true
+real(wp), allocatable :: y(:),x(:)
+real(wp) :: result,true
 
 !---------------
 ! Logic
@@ -26,12 +26,12 @@ write(*,*)
 allocate(y(3))
 allocate(x(4))
 
-y = [1,2,3]
-x = [0,1,2,3,4]
+y = linspace(1.0_wp,3.0_wp,3)
+x = [y(1)-0.1,y(1),y(2),y(3),y(3)+0.1]
 call test_linear_spline(y,x,total_tests,passed_tests)
 
-y = [0.5,2.5,4.5]
-x = [0.4,0.5,2.5,4.5,4.6]
+y = linspace(200.42_wp,799.99_wp,3)
+x = [y(1)-0.1,y(1),y(2),y(3),y(3)+0.1]
 call test_linear_spline(y,x,total_tests,passed_tests)
 
 deallocate(y)
@@ -46,13 +46,13 @@ write(*,*)
 allocate(y(5))
 allocate(x(7))
 
-y = [1,2,3,4,5]
-x = [0,1,2,3,4,5,6]
+y = linspace(1.0_wp,5.0_wp,5)
+x = [y(1)-0.1,y(1),y(2),y(3),y(4),y(5),y(5)+0.1]
 call test_cubic_spline(y,x,total_tests,passed_tests)
 
 
-y = [10.55,40.55,70.55,100.55,130.55]
-x = [10.00,10.55,40.55,70.55,100.55,130.55,131.00]
+y = linspace(234.432_wp,987.789_wp,5)
+x = [y(1)-0.1,y(1),y(2),y(3),y(4),y(5),y(5)+0.1]
 call test_cubic_spline(y,x,total_tests,passed_tests)
 
 write(*,*) "!---------------------------"
@@ -62,9 +62,9 @@ write(*,*) "!---------------------------"
 
 contains
 subroutine test_linear_spline(y,x,total_tests,passed_tests)
-  real, allocatable, intent(in) :: y(:),x(:)
+  real(wp), allocatable, intent(in) :: y(:),x(:)
   integer, intent(inout) :: passed_tests,total_tests
-  real :: true,result
+  real(wp) :: true,result
   integer :: i
 
   write(*,*)
@@ -80,11 +80,10 @@ subroutine test_linear_spline(y,x,total_tests,passed_tests)
       true = 1.0
     end if
 
-    write(*,*) "Linear spline"
-    write(*,*) "Evaluating at ", x(i)
-    write(*,*) "Expected value is ", true
-    write(*,*) "Calculated value is ", result
-    if ( close(result,true,1e-5) ) then
+    write(*,"(A,TR8,F15.5)") "Evaluating at", x(i)
+    write(*,"(A,TR4,F15.5)") "Expected value is", true
+    write(*,"(A,TR2,F15.5)") "Calculated value is", result
+    if ( close(result,true,1.0_wp*1e-5) ) then
       passed_tests = passed_tests + 1
       write(*,*) "Test passed"
     else
@@ -100,32 +99,30 @@ subroutine test_linear_spline(y,x,total_tests,passed_tests)
 end subroutine test_linear_spline
 
 subroutine test_cubic_spline(y,x,total_tests,passed_tests)
-  real, allocatable, intent(in) :: y(:),x(:)
+  real(wp), intent(in) :: y(5),x(7)
   integer, intent(inout) :: passed_tests,total_tests
-  real :: true,result
+  real(wp) :: true,result
   integer :: i
 
   write(*,*)
-  write(*,*) "Test number ", total_tests
+  write(*,"(A,I10)") "Test number ", total_tests
   write(*,*) "Grid is "
   write(*,*) y
+  write(*,*)
 
   do i = 1, size(x)
-    true = 10.0
     result = cubic_spline(y,x(i))
-    if ( x(i) <= y(1) .or. x(i) >= y(5) ) then
-      true = 0.0
-    elseif ( x(i) == y(2) .or. x(i) == y(4) ) then
-      true = 1/6
-    elseif ( x(i) == y(3) ) then
-      true = 2/3
+    true = 0.0
+    if ( close(x(i),y(2),1.0_wp*1e-1) .or. close(x(i),y(4),1.0_wp*1e-1) ) then
+      true = 0.16666666_wp
+    elseif ( close(x(i),y(3),1.0_wp*1e-1) ) then
+      true = 0.66666666_wp
     end if
 
-    write(*,*) "Cubic spline"
-    write(*,*) "Evaluating at ", x(i)
-    write(*,*) "Expected value is ", true
-    write(*,*) "Calculated value is ", result
-    if ( close(result,true,1e-5) ) then
+    write(*,"(A,TR8,F15.5)") "Evaluating at", x(i)
+    write(*,"(A,TR4,F15.5)") "Expected value is", true
+    write(*,"(A,TR2,F15.5)") "Calculated value is", result
+    if ( close(result,true,1.0_wp*1e-5) ) then
       passed_tests = passed_tests + 1
       write(*,*) "Test passed"
     else
@@ -140,26 +137,21 @@ subroutine test_cubic_spline(y,x,total_tests,passed_tests)
 end subroutine test_cubic_spline
 
 subroutine plot_spline(y,spline)
-  real, external :: spline
+  real(wp), external :: spline
   integer, parameter :: i = 101
   integer :: j
-  real, intent(in) :: y(:)
-  real :: x(i), fx(i)
-  real(wp) :: a, b, dble_x(i), dble_fx(i)
+  real(wp), intent(in) :: y(:)
+  real(wp) :: x(i),fx(i)
   type(gpf):: gp
-  a = dble(y(1))
-  b = dble(y(size(y)))
-  x = linspace(a,b,i)
-  dble_x = dble(x)
+  x = linspace(y(1),y(size(y)),i)
 
   do j = 1,i
     fx(j) = spline(y,x(j))
   end do
-  dble_fx = dble(fx)
 
   call gp%title('B-Spline')
   call gp%options('set key top right; set grid')
-  call gp%plot(dble_x,dble_fx,'title "B(x)" with lines lt 1 lw 1')
+  call gp%plot(x,fx,'title "B(x)" with lines lt 1 lw 1')
 end subroutine plot_spline
 
 end program bspline_tests

@@ -10,8 +10,8 @@ implicit none
 !---------------
 
 integer :: i,j,k,l,m,n,ub,lb,ms
-real :: multiplier
-real, allocatable :: b(:), x(:), y(:), A(:,:)
+real(wp) :: multiplier
+real(wp), allocatable :: b(:), x(:), y(:), A(:,:)
 type(col), allocatable :: Row(:)
 
 !---------------

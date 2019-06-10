@@ -5,7 +5,7 @@ implicit none
 contains
   subroutine gaussian_elimination(A, x, b)
     integer :: i, j, k, m
-    real, allocatable, intent(inout) :: A(:,:), x(:), b(:)
+    real(wp), allocatable, intent(inout) :: A(:,:), x(:), b(:)
     m = size(A, dim=1)
     ! Gauss elimination (on regular matrix)
     do i = 1, m-1
@@ -31,7 +31,7 @@ contains
   subroutine gaussian_elimination_banded(Row, x, b, lb, ub)
     integer :: i,j,k,l,m,n,ms
     integer, intent(in) :: lb, ub
-    real, allocatable, intent(inout) :: x(:), b(:)
+    real(wp), allocatable, intent(inout) :: x(:), b(:)
     type(col), allocatable, intent(inout) :: Row(:)
 
     ! Matrix Size:
