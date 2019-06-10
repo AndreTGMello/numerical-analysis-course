@@ -33,8 +33,11 @@ contains
 
 		! n = shape(M)
 		write(*,*) "!-------------------"
-		do i=lbound(matrix,1),ubound(matrix,1)
-			write(*,*) (matrix(i,j), j=lbound(matrix,2), ubound(matrix,2))
+		do i = 1,size(matrix,1)
+			do j = 1,size(matrix,2)
+				write(*,fmt="(F10.5,3X)", advance="no") matrix(i,j)
+			end do
+			write(*,*)
 		end do
 		write(*,*) "!-------------------"
 	end subroutine
@@ -50,37 +53,22 @@ contains
 		do i = 1, ms
 			if ( i < lb+1 ) then
 				do j = 1, size(Row(i)%Col, dim=1)
-					write(*, fmt="(F9.5, 5X)", advance="no") Row(i)%Col(j)
+					write(*, fmt="(F10.5, 3X)", advance="no") Row(i)%Col(j)
 				end do
 				do j = 1, ms - size(Row(i)%Col, dim=1)
-					write(*, fmt="(F9.5, 5X)", advance="no") 0.0
+					write(*, fmt="(F10.5, 3X)", advance="no") 0.0
 				end do
 			else
 				do j = 1, ms - size(Row(i)%Col, dim=1)
-					write(*, fmt="(F9.5, 5X)", advance="no") 0.0
+					write(*, fmt="(F10.5, 3X)", advance="no") 0.0
 				end do
 				do j = 1, size(Row(i)%Col, dim=1)
-					write(*, fmt="(F9.5, 5X)", advance="no") Row(i)%Col(j)
+					write(*, fmt="(F10.5, 3X)", advance="no") Row(i)%Col(j)
 				end do
 			end if
 			write(*,*)
 		end do
 		write(*,*) "!-------------------"
-		write(*,*)
-	end subroutine
-
-
-	! Subroutine for pretty printing arrays
-	subroutine pprint_array(b)
-		integer :: i,m
-		real(wp), intent(in) :: b(:)
-		m = size(b)
-		write(*,*)
-		write(*,*) "----- Array -----"
-		write(*,*)
-		do i = 1, m
-			write(*,fmt="(F9.5)") b(i)
-		end do
 		write(*,*)
 	end subroutine
 
