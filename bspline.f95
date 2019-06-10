@@ -1,4 +1,5 @@
 module bspline
+  use utils, only : wp
 
   implicit none
   !---------------
@@ -19,9 +20,9 @@ module bspline
       ! it is zero.
       ! x is used for computing the desired value
       ! this spline assumes in this given point.
-      real, intent(in) :: y(3),x
-      real :: h
-      real :: linear_spline
+      real(wp), intent(in) :: y(3),x
+      real(wp) :: h
+      real(wp) :: linear_spline
       h = y(2) - y(1)
       linear_spline = 0
 
@@ -43,38 +44,35 @@ module bspline
       ! it is zero.
       ! x is used for computing the desired value
       ! this spline assumes in this given point.
-      real, intent(in) :: y(5), x
-      real :: h
+      real(wp), intent(in) :: y(5), x
+      real(wp) :: h
       integer :: i,j
-      real :: cubic_spline
-
-      cubic_spline = 0
+      real(wp) :: cubic_spline
 
       h = y(2) - y(1)
       if ( x < y(1) .or. x > y(5)) then
         cubic_spline = 0
 
       elseif ( x >= y(1) .and. x < y(2) ) then
-        cubic_spline = ((x-y(1))**3)/6*h**3
+        cubic_spline = ((x-y(1))**3)/(6*h**3)
 
       elseif ( x >= y(2) .and. x < y(3) ) then
         cubic_spline = &
         ( ((x-y(1))**2)*(y(3)-x) &
             + (x-y(1))*(y(4)-x)*(x-y(2))   &
-        + ( (y(5)-x)*(x-y(2))**2 ) )/6*h**3
+        + ( (y(5)-x)*(x-y(2))**2 ) )/(6*h**3)
 
       elseif ( x >= y(3) .and. x < y(4) ) then
         cubic_spline = &
           ( (y(5)-x)*(x-y(2))*(y(4)-x) &
             + ((y(5)-x)**2)*(x-y(3))  &
-        + (x-y(1))*(y(4)-x)**2 )/6*h**3
+        + (x-y(1))*(y(4)-x)**2 )/(6*h**3)
 
       elseif ( x >= y(4) .and. x < y(5) ) then
-        cubic_spline = ((y(5)-x)**3)/6*h**3
+        cubic_spline = ((y(5)-x)**3)/(6*h**3)
 
       end if
 
     end function cubic_spline
-
 
 end module bspline
