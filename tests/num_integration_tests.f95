@@ -1,6 +1,46 @@
+module test_functions
+  use utils, only : wp
+  use num_integration
+
+  implicit none
+
+  abstract interface
+    function abs_fun(x)
+      use utils, only : wp
+      real(wp), intent(in) :: x
+      real(wp) :: abs_fun
+    end function abs_fun
+  end interface
+
+  type, extends(fun) :: constant_polynomial
+  contains
+    procedure :: eval => poly0
+  end type constant_polynomial
+
+  contains
+
+  function poly0(self, x)
+    class(constant_polynomial), intent(in) :: self
+    real(wp), intent(in) :: x
+    real(wp) :: poly0
+    procedure(abs_fun), pointer :: p => fpoly0
+    poly0 = p(x)
+  end function poly0
+
+  function fpoly0(x)
+    real(wp), intent(in) :: x
+    real(wp) :: fpoly0
+
+    fpoly0 = 1.0_wp
+  end function fpoly0
+
+end module test_functions
+
+
 program romgerg_tests
 use utils
 use num_integration
+use test_functions
 
 ! Note that not every test is meant to pass.
 ! Estimations by Romberg's using a low number
@@ -14,11 +54,17 @@ implicit none
 ! Variables
 !---------------
 
+
+!type, extends(fun) :: quadratic_polynomial
+!  contains
+!    procedure :: eval => poly2
+!end type quadratic_polynomial
+
 integer :: i,j,l,m,n,total_tests,passed_tests
 character (len=:), allocatable :: expression
 real(wp) :: a(3),b(3)
 integer :: k(3)
-real(wp), parameter :: pi = 4.D0*datan(1.D0)
+type(constant_polynomial) :: p0
 
 !---------------
 ! Logic
@@ -44,27 +90,27 @@ do i = 1, size(k)
   write(*,*) "!----------------------------------"
   do j = 1, size(a)
     expression = trim("f(x)=1")
-    call test_integration(poly0,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
+    call test_integration(p0,fpoly0,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
 
-    expression = trim("f(x)=x+1")
-    call test_integration(poly1,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
+!    expression = trim("f(x)=x+1")
+!    call test_integration(poly1,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
 
-    expression = trim("f(x)=3*x**2 + 2")
-    call test_integration(poly2,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
+!    expression = trim("f(x)=3*x**2 + 2")
+!    call test_integration(poly2,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
 
-    expression = trim("f(x)=33.33*x**5 + 8.8*x**4 + x**3 + 4.5*x*2 + 2.123")
-    call test_integration(poly5,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
+!    expression = trim("f(x)=33.33*x**5 + 8.8*x**4 + x**3 + 4.5*x*2 + 2.123")
+!    call test_integration(poly5,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
 
-    expression = trim("f(x)=8*x**7/77 + (4*sin(2*x*pi) + 9*cos(11*x*pi))/5")
-    call test_integration(ftrig,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
+!    expression = trim("f(x)=8*x**7/77 + (4*sin(2*x*pi) + 9*cos(11*x*pi))/5")
+!    call test_integration(ftrig,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
 
-    expression = trim("f(x)=e^x")
-    call test_integration(fe,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
+!    expression = trim("f(x)=e^x")
+!    call test_integration(fe,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
 
-    if ( a(j) > 0 ) then
-      expression = trim("f(x)=ln(x)")
-      call test_integration(fln,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
-    end if
+!    if ( a(j) > 0 ) then
+!      expression = trim("f(x)=ln(x)")
+!      call test_integration(fln,a(j),b(j),k(i),expression,passed_tests,total_tests,romberg,close)
+!    end if
   end do
   write(*,*)
 end do
@@ -77,12 +123,6 @@ write(*,*) "!---------------------------"
 
 contains
 
-  function poly0(x)
-    real(wp), intent(in) :: x
-    real(wp) :: poly0
-
-    poly0 = 1
-  end function poly0
 
   function poly1(x)
     real(wp), intent(in) :: x
@@ -126,7 +166,7 @@ contains
     fln = log(x)
   end function fln
 
-  subroutine test_integration(f,a,b,k,expression,passed_tests,total_tests,romberg,close)
+  subroutine test_integration(f,fcomp,a,b,k,expression,passed_tests,total_tests,romberg,close)
     real(wp), intent(in) :: a,b
     real(wp) :: true,result,abserr
     real(wp), parameter :: epsabs = 0.0D+00
@@ -142,7 +182,9 @@ contains
     integer :: neval
     real(wp) :: work(lenw)
 
-    real(wp), external :: f
+!    real(wp), external :: f
+    real(wp), external :: fcomp
+    class(fun), intent(in) :: f
     real(wp), external :: romberg
     logical, external :: close
 
@@ -152,7 +194,7 @@ contains
     write(*,*) "Test number ", total_tests
     total_tests = total_tests + 1
     result = romberg(f, a, b, k)
-    call dqag ( f, a, b, epsabs, epsrel, key, true, abserr, neval, ier,&
+    call dqag ( fcomp, a, b, epsabs, epsrel, key, true, abserr, neval, ier,&
     limit, lenw, last, iwork, work )
 
     write (*, '(A,A)') '  Integrand is ', expression
