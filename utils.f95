@@ -4,6 +4,7 @@ implicit none
 ! wp = working precision
 ! wp is set to double precision
 integer, parameter :: wp = kind(1.0d0)
+real(wp), parameter :: pi = 4.D0*datan(1.D0)
 
 ! Data structure for storing banded matrices
 type col
@@ -44,26 +45,31 @@ contains
 
 	! Subroutine for pretty printing banded matrices
 	subroutine pprint_band(Row,lb,ub)
-		integer :: i,j,ms,lb,ub
+		integer :: i,j,pad,ms,lb,ub
 		type(col), allocatable, intent(in) :: Row(:)
 		ms = size(Row)
+		pad = 0
 		write(*,*)
 		write(*,*) "!-------------------"
 		write(*,*)
 		do i = 1, ms
-			if ( i < lb+1 ) then
-				do j = 1, size(Row(i)%Col, dim=1)
+			if ( i <= lb+1 ) then
+				do j = 1, size(Row(i)%col)
 					write(*, fmt="(F10.5, 3X)", advance="no") Row(i)%Col(j)
 				end do
-				do j = 1, ms - size(Row(i)%Col, dim=1)
+				do j = 1, ms - size(Row(i)%col)
 					write(*, fmt="(F10.5, 3X)", advance="no") 0.0
 				end do
 			else
-				do j = 1, ms - size(Row(i)%Col, dim=1)
+				pad = pad + 1
+				do j = 1, pad !ms - size(Row(i)%Col, dim=1)
 					write(*, fmt="(F10.5, 3X)", advance="no") 0.0
 				end do
-				do j = 1, size(Row(i)%Col, dim=1)
+				do j = 1, size(Row(i)%col)
 					write(*, fmt="(F10.5, 3X)", advance="no") Row(i)%Col(j)
+				end do
+				do j = pad+size(Row(i)%col), ms-1
+					write(*, fmt="(F10.5, 3X)", advance="no") 0.0
 				end do
 			end if
 			write(*,*)
@@ -72,32 +78,4 @@ contains
 		write(*,*)
 	end subroutine
 
-!TODO inner_product_wrapper
-
-!  function inner_product_wrapper(x)
-!    real, intent(out) :: inner_product_wrapper
-!    inner_product_wrapper = inner_product()
-!  end function inner_product_wrapper
-
-  function inner_product(phi_i, phi_j, dphi_i, dphi_j, q, k, x)
-		real(wp) :: inner_product
-    real(wp), intent(in) :: x
-    real(wp), external :: phi_i, phi_j, dphi_i, dphi_j, q, k
-
-!		interface
-!			function phi_i(x)
-!				real, intent(in) :: x
-!				real, intent(out) :: phi_i
-!			end function
-!		end interface
-!		interface
-!			function phi_j(x)
-!				real, intent(in) :: x
-!				real, intent(out) :: phi_j
-!			end function
-!		end interface
-
-
-		inner_product = q(x) * dphi_i(x) * dphi_j(x) + k(x) + phi_i(x) + phi_j(x)
-  end function inner_product
 end module utils
