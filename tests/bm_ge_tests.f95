@@ -55,14 +55,14 @@ Row(6)%Col = [2, 3, 1, 5, 13]
 b = [2, 1, 2, 4, 2, 6]
 
 call pprint_band(Row,lb,ub)
-call pprint_array(b)
+write(*,*) b
 call gaussian_elimination_banded(Row,x,b,lb,ub)
 
 print *, "---- AFTER GE ----",char(10)
 
 call pprint_band(Row,lb,ub)
-call pprint_array(b)
-call pprint_array(x)
+write(*,*) b
+write(*,*) x
 write(*,*) "---TEST---"
 allocate(A(ms,ms))
 allocate(y(ms))
@@ -74,8 +74,8 @@ A(5,1:) = [1, 3, 2, 4, 12, 3]
 A(6,1:) = [0, 2, 3, 1, 5, 13]
 b = [2, 1, 2, 4, 2, 6]
 call gaussian_elimination(A, y, b)
-call pprint_array(b)
-call pprint_array(x)
+write(*,*) b
+write(*,*) x
 call pprint_mat(A)
 
 do i=1, size(Row)

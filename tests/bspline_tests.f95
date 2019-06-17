@@ -28,11 +28,27 @@ allocate(x(4))
 
 y = linspace(1.0_wp,3.0_wp,3)
 x = [y(1)-0.1,y(1),y(2),y(3),y(3)+0.1]
-call test_linear_spline(y,x,total_tests,passed_tests)
+call test_linear_spline(y,x,linear_spline,total_tests,passed_tests)
 
 y = linspace(200.42_wp,799.99_wp,3)
 x = [y(1)-0.1,y(1),y(2),y(3),y(3)+0.1]
-call test_linear_spline(y,x,total_tests,passed_tests)
+call test_linear_spline(y,x,linear_spline,total_tests,passed_tests)
+
+write(*,*)
+write(*,*) "!----------------------------------"
+write(*,*) "! Testing linear spline derivatives"
+write(*,*) "!----------------------------------"
+write(*,*)
+
+y = linspace(1.0_wp,3.0_wp,3)
+x = [y(1)-0.1,y(1),y(2),y(3),y(3)+0.1]
+!call test_linear_spline(y,x,linear_spline_deriv,total_tests,passed_tests)
+call plot_spline(y,linear_spline_deriv)
+
+y = linspace(200.42_wp,799.99_wp,3)
+x = [y(1)-0.1,y(1),y(2),y(3),y(3)+0.1]
+!call test_linear_spline(y,x,linear_spline_deriv,total_tests,passed_tests)
+call plot_spline(y,linear_spline_deriv)
 
 deallocate(y)
 deallocate(x)
@@ -48,12 +64,28 @@ allocate(x(7))
 
 y = linspace(1.0_wp,5.0_wp,5)
 x = [y(1)-0.1,y(1),y(2),y(3),y(4),y(5),y(5)+0.1]
-call test_cubic_spline(y,x,total_tests,passed_tests)
+call test_cubic_spline(y,x,cubic_spline,total_tests,passed_tests)
 
 
 y = linspace(234.432_wp,987.789_wp,5)
 x = [y(1)-0.1,y(1),y(2),y(3),y(4),y(5),y(5)+0.1]
-call test_cubic_spline(y,x,total_tests,passed_tests)
+call test_cubic_spline(y,x,cubic_spline,total_tests,passed_tests)
+
+write(*,*)
+write(*,*) "!--------------------------------"
+write(*,*) "! Testing cubic spline derivative"
+write(*,*) "!--------------------------------"
+write(*,*)
+
+y = linspace(1.0_wp,5.0_wp,5)
+x = [y(1)-0.1,y(1),y(2),y(3),y(4),y(5),y(5)+0.1]
+!call test_cubic_spline(y,x,cubic_spline_deriv,total_tests,passed_tests)
+call plot_spline(y,cubic_spline_deriv)
+
+y = linspace(234.432_wp,987.789_wp,5)
+x = [y(1)-0.1,y(1),y(2),y(3),y(4),y(5),y(5)+0.1]
+!call test_cubic_spline(y,x,cubic_spline_deriv,total_tests,passed_tests)
+call plot_spline(y,cubic_spline_deriv)
 
 write(*,*) "!---------------------------"
 write(*,'(a,g14.6)') " !Total tests ", total_tests-1
@@ -61,10 +93,11 @@ write(*,'(a,g14.6)') " !Tests passed", passed_tests
 write(*,*) "!---------------------------"
 
 contains
-subroutine test_linear_spline(y,x,total_tests,passed_tests)
+subroutine test_linear_spline(y,x,f,total_tests,passed_tests)
   real(wp), allocatable, intent(in) :: y(:),x(:)
   integer, intent(inout) :: passed_tests,total_tests
   real(wp) :: true,result
+  real(wp), external :: f
   integer :: i
 
   write(*,*)
@@ -73,7 +106,7 @@ subroutine test_linear_spline(y,x,total_tests,passed_tests)
   write(*,*) y
 
   do i = 1, size(x)
-    result = linear_spline(y,x(i))
+    result = f(y,x(i))
     if ( x(i) <= y(1) .or. x(i) >= y(3) ) then
       true = 0.0
     else
@@ -95,13 +128,14 @@ subroutine test_linear_spline(y,x,total_tests,passed_tests)
     write(*,*)
   end do
 
-  call plot_spline(y, linear_spline)
+  call plot_spline(y, f)
 end subroutine test_linear_spline
 
-subroutine test_cubic_spline(y,x,total_tests,passed_tests)
+subroutine test_cubic_spline(y,x,f,total_tests,passed_tests)
   real(wp), intent(in) :: y(5),x(7)
   integer, intent(inout) :: passed_tests,total_tests
   real(wp) :: true,result
+  real(wp), external :: f
   integer :: i
 
   write(*,*)
@@ -111,7 +145,7 @@ subroutine test_cubic_spline(y,x,total_tests,passed_tests)
   write(*,*)
 
   do i = 1, size(x)
-    result = cubic_spline(y,x(i))
+    result = f(y,x(i))
     true = 0.0
     if ( close(x(i),y(2),1.0_wp*1e-1) .or. close(x(i),y(4),1.0_wp*1e-1) ) then
       true = 0.16666666_wp
@@ -133,7 +167,7 @@ subroutine test_cubic_spline(y,x,total_tests,passed_tests)
     total_tests = total_tests + 1
     write(*,*)
   end do
-  call plot_spline(y, cubic_spline)
+  call plot_spline(y, f)
 end subroutine test_cubic_spline
 
 subroutine plot_spline(y,spline)
