@@ -17,3 +17,6 @@ main
 cr.sh
 demo.f90
 *.gp
+/lib/libmatheval-1.1.11/
+useful_resources
+temp.*
