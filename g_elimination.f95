@@ -52,10 +52,9 @@ contains
         do while ( j <= i+lb .and. j <= ms)
 
           ! Fix column index
+          fix_col_index = 0
           if ( j > (lb+1) ) then
             fix_col_index = j - (lb+1)
-          else
-            fix_col_index = 0
           end if
 
           ! Multiplier

@@ -198,28 +198,26 @@ type(gpf):: gp
 
 write(*,*) "Main"
 
-
-
 ! Array of number of internal nodes for the integration
 allocate(n(4))
 
 ! Number of internal nodes for the integration
 n(1:) = [7, 15, 31, 63]
 
+romberg_iterations = 11
 ! ---------------------------
 ! Solving with linear splines
 ! ---------------------------
-do c = 1, 1
+do c = 1, size(n)
   call solve_finite_elements(n(c),linear_spline,linear_spline_deriv,.false.,3)
 end do
 
 ! ---------------------------
 ! Solving with cubic splines
 ! ---------------------------
-do c = 1, 1
-!  call solve_finite_elements(n(c),cubic_spline,.true.)
+do c = 1, size(n)
+  call solve_finite_elements(n(c),cubic_spline,cubic_spline_deriv,.true.,romberg_iterations)
 end do
-
 
 contains
 
@@ -257,8 +255,7 @@ contains
     ! If .true. cubic, if .false. linear
     logical, intent(in) :: type
     integer :: i,j,l,o,m,ub,lb,ms,lini,lend,c
-    integer :: num_nodes
-    integer :: num_support_nodes
+    integer :: total_num_nodes,num_support_nodes,total_num_support_nodes
     real(wp), parameter :: alpha = 0.0_wp
     real(wp), parameter :: omega = 1.0_wp
     real(wp) :: a,b,h,x_0,x_1,x,result
@@ -281,11 +278,18 @@ contains
       write(*,*) "Solving with cubic splines"
       ub = 3
       lb = 3
-      num_support_nodes = 5
+      ! Number of internal nodes
+      num_support_nodes = 3
+      ! Total number of nodes
+      total_num_support_nodes = num_support_nodes+2
     else
+      write(*,*) "Solving with linear splines"
       ub = 1
       lb = 1
-      num_support_nodes = 3
+      ! Number of internal nodes
+      num_support_nodes = 1
+      ! Total number of nodes
+      total_num_support_nodes = num_support_nodes+2
     end if
 
     ! Banded matrix structure
@@ -295,33 +299,33 @@ contains
     ! inner product between f and the splines
     allocate(f_phi(n))
 
-    ! Coeficients
+    ! Coeficients alpha
     allocate(coef(n))
 
     ! Total number of integration nodes
-    ! Total nodes = internal nodes + 2
-    num_nodes = n+2
+    ! total_num_nodes = internal nodes + 2
+    total_num_nodes = n+2
 
     ! Saving results for plots
-    allocate(plot_expected(num_nodes))
-    allocate(plot_calculated(num_nodes))
+    allocate(plot_expected(total_num_nodes))
+    allocate(plot_calculated(total_num_nodes))
 
     ! Nodes in the integration range
     ! Range is given by alpha and omegra params
-    allocate(integration_range(num_nodes))
-    integration_range = linspace(alpha,omega,num_nodes)
+    allocate(integration_range(total_num_nodes))
+    integration_range = linspace(alpha,omega,total_num_nodes)
 
     ! Stepsize
     h = integration_range(2) - integration_range(1)
 
     ! Support nodes for the splines
-    allocate(support_node_i(num_support_nodes))
-    allocate(support_node_j(num_support_nodes))
-    allocate(support_nodes_array(n,num_support_nodes))
+    allocate(support_node_i(total_num_support_nodes))
+    allocate(support_node_j(total_num_support_nodes))
+    allocate(support_nodes_array(n,total_num_support_nodes))
 
     do m = 1,n
       ! Construct support nodes for the spline i
-      do i = 1,num_support_nodes
+      do i = 1,total_num_support_nodes
         support_node_i(i) = integration_range(m) + (i-1)*h
       end do
 
@@ -330,51 +334,34 @@ contains
       support_nodes_array(m,1:) = support_node_i(1:)
 
       call set_inner_product(ipo,support_node_i,&
-                                f,&
-                                base_spline&
-                                )
+                            f,&
+                            base_spline&
+                            )
 
       a = support_node_i(1)
       b = support_node_i(size(support_node_i))
       result = romberg(ipo, a, b, romberg_iterations)
       f_phi(m) = result
 
-      lini = 0
-      lend = 4
-      if ( type ) then
-        if ( lini < lb+1 ) then
-          allocate(Row(m)%col(num_support_nodes-1))
-
-        elseif ( m > n-lb ) then
-          allocate(Row(m)%col(num_support_nodes-1))
-          lini = -4
-          lend = 0
-        else
-          allocate(Row(m)%col(num_support_nodes))
-          lini = -3
-          lend = 3
-        end if
-      else
-        if ( m < lb+1 ) then
-          allocate(Row(m)%col(num_support_nodes-1))
-          lini = 0
-          lend = 1
-        elseif ( m > n-lb ) then
-          allocate(Row(m)%col(num_support_nodes-1))
-          lini = -1
-          lend = 0
-        else
-          allocate(Row(m)%col(num_support_nodes))
-          lini = -1
-          lend = 1
-        end if
+      ! Calculatin how many support nodes
+      ! phi_j shall be used in the L inner
+      ! product agains phi_i
+      lini = -num_support_nodes
+      lend = num_support_nodes
+      if ( m < lb+1 ) then
+        lini = 0+(1-m)
+        lend = num_support_nodes
+      elseif ( m > n-lb ) then
+        lini = -num_support_nodes
+        lend = num_support_nodes+(lb+1-m)
       end if
+      allocate(Row(m)%col(2*(num_support_nodes)+1-(abs(lini+lend))))
 
       ! Variable o helps with indexing
       o = 1
       do j = lini,lend
         ! Construct support nodes for the spline j
-        do i = 1,num_support_nodes
+        do i = 1,total_num_support_nodes
           support_node_j(i) = integration_range(m+j) + (i-1)*h
         end do
 
