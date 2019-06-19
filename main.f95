@@ -146,6 +146,18 @@ contains
     end if
   end subroutine set_inner_product
 
+  function estimated_function(alpha,x,support_nodes,spline_base)
+    real(wp), external :: spline_base
+    real(wp), intent(in) :: alpha(:),support_nodes(:,:)
+    real(wp), intent(in) :: x
+    real(wp) :: estimated_function
+    integer :: i
+    estimated_function = 0
+    do i = 1, size(alpha)
+      estimated_function = estimated_function + alpha(i)*spline_base(support_nodes(i,1:),x)
+    end do
+  end function estimated_function
+
 end module user_defined_functions
 
 program main
@@ -155,7 +167,7 @@ use g_elimination
 use num_integration
 use bspline
 use user_defined_functions
-use ogpf, only : linspace
+use ogpf
 
 implicit none
 
@@ -164,17 +176,21 @@ implicit none
 ! Variables
 !---------------
 
-integer :: i,j,l,o,m,ub,lb,ms
+integer :: i,j,l,o,m,ub,lb,ms,lini,lend,c,romberg_iterations
 integer :: num_nodes
 integer :: num_support_nodes
 integer, allocatable :: n(:)
 real(wp), parameter :: alpha = 0.0_wp
 real(wp), parameter :: omega = 1.0_wp
 real(wp) :: a,b,h,x_0,x_1,x,result
-real(wp), allocatable :: integration_range(:),support_node_i(:),support_node_j(:), f_phi(:)
+real(wp), allocatable :: integration_range(:),support_node_i(:)&
+                          ,support_node_j(:), f_phi(:), coef(:)&
+                          ,support_nodes_array(:,:), plot_expected(:)&
+                          ,plot_calculated(:)
 type(inner_product_l_obj) :: ipol
 type(inner_product_obj) :: ipo
 type(col), allocatable :: Row(:)
+type(gpf):: gp
 
 !---------------
 ! Logic
@@ -182,112 +198,35 @@ type(col), allocatable :: Row(:)
 
 write(*,*) "Main"
 
+
+
+! Array of number of internal nodes for the integration
+allocate(n(4))
+
+! Number of internal nodes for the integration
+n(1:) = [7, 15, 31, 63]
+
 ! ---------------------------
 ! Solving with linear splines
 ! ---------------------------
-
-! Romberg iterations
-l = 20
-
-! Number of support nodes
-! 3 = Linear Spline
-! 5 = Cubic Spline
-num_support_nodes = 3
-
-! Array of number of internal nodes for the integration
-allocate(n(2))
-
-! Number of internal nodes for the integration
-n(1) = 7
-
-! Banded matrix structure
-allocate(Row(n(1)))
-
-! Inner product between f and the splines
-allocate(f_phi(n(1)))
-
-! Total number of integration nodes
-! Total nodes = internal nodes + 2
-num_nodes = n(1)+2
-
-! Nodes in the integration range
-! Range is given by alpha and omegra params
-allocate(integration_range(num_nodes))
-integration_range = linspace(alpha,omega,num_nodes)
-
-! Stepsize
-h = integration_range(2) - integration_range(1)
-
-! Support nodes for the splines
-allocate(support_node_i(num_support_nodes))
-allocate(support_node_j(num_support_nodes))
-
-! In the case of linear splines,
-! first and last column will have one less
-! element.
-allocate(Row(1)%col(num_support_nodes-1))
-allocate(Row(size(Row))%col(num_support_nodes-1))
-
-do m = 3,num_nodes-2
-  allocate(Row(m-1)%col(num_support_nodes))
-
-  ! Construct support nodes for the spline i
-  do i = 1,num_support_nodes
-    support_node_i(i) = integration_range(m) + (i-1)*h
-  end do
-
-  call set_inner_product(ipo,support_node_i,&
-                            f,&
-                            linear_spline&
-                            )
-
-  a = support_node_i(1)
-  b = support_node_i(size(support_node_i))
-  result = romberg(ipo, a, b, l)
-  f_phi(m-1) = result
-
-  ! Variable o helps with indexing
-  o = 1
-  do j = m-1,m+1
-    ! Construct support nodes for the spline j
-    do i = 1,num_support_nodes
-      support_node_j(i) = integration_range(j) + (i-1)*h
-    end do
-
-    write(*,*) support_node_i
-    write(*,*) support_node_j
-    write(*,*)
-
-    ! Define integration limits
-    a = support_node_i(1)
-    b = support_node_j(size(support_node_j))
-
-    ! Construct the inner product, according to the
-    ! given formula
-    call set_inner_product_l(ipol,support_node_i,support_node_j,&
-                            q,k,f,&
-                            linear_spline,linear_spline_deriv&
-                            )
-
-    ! Integrate inner product using Romberg's
-    result = romberg(ipol, a, b, l)
-    ! Save result in the banded matrix structure
-    Row(m-1)%col(o) = result
-
-    o = o + 1
-  end do
+do c = 1, 1
+  call solve_finite_elements(n(c),linear_spline,linear_spline_deriv,.false.,3)
 end do
 
-! Test
-call pprint_band(Row,1,1)
-write(*,*) f_phi
+! ---------------------------
+! Solving with cubic splines
+! ---------------------------
+do c = 1, 1
+!  call solve_finite_elements(n(c),cubic_spline,.true.)
+end do
+
 
 contains
 
 ! User defined functions for the problem
 ! to be solved go here
 
-function q(x)
+  function q(x)
     real(wp), intent(in) :: x
     real(wp) :: q
     q = 0
@@ -305,4 +244,181 @@ function q(x)
     f = (pi**2)*(sin(pi*x)-9*sin(3*pi*x))
   end function f
 
+  function u(x)
+    real(wp), intent(in) :: x
+    real(wp) :: u
+    u = sin(pi*x) - sin(3*pi*x)
+  end function u
+
+  subroutine solve_finite_elements(n,base_spline,base_spline_deriv,type,romberg_iterations)
+    integer, intent(in) :: n,romberg_iterations
+    real(wp), external :: base_spline,base_spline_deriv
+    ! Flag:
+    ! If .true. cubic, if .false. linear
+    logical, intent(in) :: type
+    integer :: i,j,l,o,m,ub,lb,ms,lini,lend,c
+    integer :: num_nodes
+    integer :: num_support_nodes
+    real(wp), parameter :: alpha = 0.0_wp
+    real(wp), parameter :: omega = 1.0_wp
+    real(wp) :: a,b,h,x_0,x_1,x,result
+    real(wp), allocatable :: integration_range(:),support_node_i(:)&
+                              ,support_node_j(:), f_phi(:), coef(:)&
+                              ,support_nodes_array(:,:), plot_expected(:)&
+                              ,plot_calculated(:)
+    type(inner_product_l_obj) :: ipol
+    type(inner_product_obj) :: ipo
+    type(col), allocatable :: Row(:)
+    type(gpf):: gp
+
+    ! Number of upper and lower bands
+    ! ub = lb = 1 iff linear splines
+    ! ub = lb = 3 iff cubic splines
+    ! Number of support nodes
+    ! 3 = Linear Spline
+    ! 5 = Cubic Spline
+    if ( type ) then
+      write(*,*) "Solving with cubic splines"
+      ub = 3
+      lb = 3
+      num_support_nodes = 5
+    else
+      ub = 1
+      lb = 1
+      num_support_nodes = 3
+    end if
+
+    ! Banded matrix structure
+    allocate(Row(n))
+
+    ! Array for the result of the
+    ! inner product between f and the splines
+    allocate(f_phi(n))
+
+    ! Coeficients
+    allocate(coef(n))
+
+    ! Total number of integration nodes
+    ! Total nodes = internal nodes + 2
+    num_nodes = n+2
+
+    ! Saving results for plots
+    allocate(plot_expected(num_nodes))
+    allocate(plot_calculated(num_nodes))
+
+    ! Nodes in the integration range
+    ! Range is given by alpha and omegra params
+    allocate(integration_range(num_nodes))
+    integration_range = linspace(alpha,omega,num_nodes)
+
+    ! Stepsize
+    h = integration_range(2) - integration_range(1)
+
+    ! Support nodes for the splines
+    allocate(support_node_i(num_support_nodes))
+    allocate(support_node_j(num_support_nodes))
+    allocate(support_nodes_array(n,num_support_nodes))
+
+    do m = 1,n
+      ! Construct support nodes for the spline i
+      do i = 1,num_support_nodes
+        support_node_i(i) = integration_range(m) + (i-1)*h
+      end do
+
+      ! Save this support node array for later use
+      ! at the `estimated_function` method
+      support_nodes_array(m,1:) = support_node_i(1:)
+
+      call set_inner_product(ipo,support_node_i,&
+                                f,&
+                                base_spline&
+                                )
+
+      a = support_node_i(1)
+      b = support_node_i(size(support_node_i))
+      result = romberg(ipo, a, b, romberg_iterations)
+      f_phi(m) = result
+
+      lini = 0
+      lend = 4
+      if ( type ) then
+        if ( lini < lb+1 ) then
+          allocate(Row(m)%col(num_support_nodes-1))
+
+        elseif ( m > n-lb ) then
+          allocate(Row(m)%col(num_support_nodes-1))
+          lini = -4
+          lend = 0
+        else
+          allocate(Row(m)%col(num_support_nodes))
+          lini = -3
+          lend = 3
+        end if
+      else
+        if ( m < lb+1 ) then
+          allocate(Row(m)%col(num_support_nodes-1))
+          lini = 0
+          lend = 1
+        elseif ( m > n-lb ) then
+          allocate(Row(m)%col(num_support_nodes-1))
+          lini = -1
+          lend = 0
+        else
+          allocate(Row(m)%col(num_support_nodes))
+          lini = -1
+          lend = 1
+        end if
+      end if
+
+      ! Variable o helps with indexing
+      o = 1
+      do j = lini,lend
+        ! Construct support nodes for the spline j
+        do i = 1,num_support_nodes
+          support_node_j(i) = integration_range(m+j) + (i-1)*h
+        end do
+
+        write(*,*) support_node_i
+        write(*,*) support_node_j
+        write(*,*)
+
+        ! Define integration limits
+        a = support_node_i(1)
+        b = support_node_j(size(support_node_j))
+
+        ! Construct the inner product, according to the
+        ! given formula
+        call set_inner_product_l(ipol,support_node_i,support_node_j,&
+                                q,k,f,&
+                                base_spline,base_spline_deriv&
+                                )
+
+        ! Integrate inner product using Romberg's
+        result = romberg(ipol, a, b, romberg_iterations)
+        ! Save result in the banded matrix structure
+        Row(m)%col(o) = result
+
+        o = o + 1
+      end do
+    end do
+
+    ! Test
+    call pprint_band(Row,lb,ub)
+
+    call gaussian_elimination_banded(Row,coef,f_phi,1,1)
+
+    call pprint_band(Row,lb,ub)
+
+
+    do i = 1, size(integration_range)
+      plot_calculated(i) = estimated_function(f_phi,integration_range(i),support_nodes_array,base_spline)
+      plot_expected(i) = u(integration_range(i))
+    end do
+
+    call gp%title('Test')
+    call gp%options('set key top right; set grid')
+    call gp%plot(x1=integration_range,y1=plot_expected,ls1='title "Expected" with lines lt 1 lw 1',&
+    x2=integration_range,y2=plot_calculated,ls2='title "Calculated" with lines lt 2 lw 1')
+
+  end subroutine solve_finite_elements
 end program main
