@@ -29,7 +29,7 @@ contains
   end subroutine
 
   subroutine gaussian_elimination_banded(Row, x, b, lb, ub)
-    integer :: i,j,k,l,m,n,ms,fix_col_index,fix_diag_col_index,temp_fix_col_index
+    integer :: i,j,k,l,m,n,ms,fix_col_index,fix_diag_col_index,temp_fix_col_index,diagonal,padding
     integer, intent(in) :: lb, ub
     real(wp), allocatable, intent(inout) :: x(:), b(:)
     type(col), allocatable, intent(inout) :: Row(:)
@@ -59,7 +59,7 @@ contains
 
           ! Multiplier
           Row(j)%Col(i-fix_col_index) = Row(j)%Col(i-fix_col_index)&
-                                        /Row(i)%Col(i-fix_diag_col_index)
+                        /Row(i)%Col(i-fix_diag_col_index)
 
           ! Apply multiplier to the systems solution (b)
           b(j) = b(j) - Row(j)%Col(i-fix_col_index)*b(i)
@@ -82,30 +82,31 @@ contains
 
 
     ! Solving the system
-    ! k and l are auxiliary variables for index fixing/shifting
+    ! k, diagonal and padding are auxiliary variables
+    ! for index fixing/shifting
     ! due to the way the band matrix is stored.
-    l = ub + 1
 
-    do i = ms, ms-ub, -1
-        x(i) = b(i)
-        k = ms
-        do j = size(Row(i)%Col, dim=1), size(Row(i)%Col, dim=1) - ub + l, -1
-            x(i) = x(i) - Row(i)%Col(j)*x(k)
-            k = k-1
-        end do
-        x(i) = x(i)/Row(i)%Col(j)
-        l = l - 1
+    padding = 0
+    diagonal = size(Row(ms)%Col)
+    do i = ms, 1, -1
+      ! Fix index
+      if ( ms-i > ub ) then
+        padding = padding + 1
+      end if
+      if ( i <= lb ) then
+        diagonal = diagonal - 1
+      end if
+      k = ms - padding
+
+      ! Regular algorithm
+      x(i) = b(i)
+      do j = size(Row(i)%Col), diagonal + 1, -1
+        x(i) = x(i) - Row(i)%Col(j)*x(k)
+        k = k -1
+      end do
+      x(i) = x(i)/Row(i)%Col(j)
     end do
 
-    do i = ms - ub - 1, 1, -1
-        x(i) = b(i)
-        k =  size(Row(i)%Col)
-        do j = size(Row(i)%Col), size(Row(i)%Col) - ub + 1, -1
-            x(i) = x(i) - Row(i)%Col(j)*x(k)
-            k = k-1
-        end do
-        x(i) = x(i)/Row(i)%Col(j)
-    end do
   end subroutine gaussian_elimination_banded
 
 end module g_elimination
