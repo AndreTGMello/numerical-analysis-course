@@ -41,7 +41,8 @@ use utils
 use num_integration
 use test_function_object
 
-! Note that not every test is meant to pass.
+! Note that not every test is meant to pass,
+! depending on the chosen number of iterations.
 ! Estimations by Romberg's using a low number
 ! of iterations should not give a decent
 ! approximation for higher order polynomials
@@ -65,7 +66,7 @@ type(function_object) :: fobj
 
 total_tests = 1
 passed_tests = 0
-k = [2, 5, 10]
+k = [5, 10, 15]
 a = [-2.0, 0.0, 1.0]
 b = [1.0, 1.0, 5.0]
 

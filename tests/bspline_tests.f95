@@ -42,12 +42,12 @@ write(*,*)
 
 y = linspace(1.0_wp,3.0_wp,3)
 x = [y(1)-0.1,y(1),y(2),y(3),y(3)+0.1]
-!call test_linear_spline(y,x,linear_spline_deriv,total_tests,passed_tests)
+call test_linear_spline(y,x,linear_spline_deriv,total_tests,passed_tests)
 call plot_spline(y,linear_spline_deriv)
 
 y = linspace(200.42_wp,799.99_wp,3)
 x = [y(1)-0.1,y(1),y(2),y(3),y(3)+0.1]
-!call test_linear_spline(y,x,linear_spline_deriv,total_tests,passed_tests)
+call test_linear_spline(y,x,linear_spline_deriv,total_tests,passed_tests)
 call plot_spline(y,linear_spline_deriv)
 
 deallocate(y)
@@ -79,12 +79,12 @@ write(*,*)
 
 y = linspace(1.0_wp,5.0_wp,5)
 x = [y(1)-0.1,y(1),y(2),y(3),y(4),y(5),y(5)+0.1]
-!call test_cubic_spline(y,x,cubic_spline_deriv,total_tests,passed_tests)
+call test_cubic_spline(y,x,cubic_spline_deriv,total_tests,passed_tests)
 call plot_spline(y,cubic_spline_deriv)
 
 y = linspace(234.432_wp,987.789_wp,5)
 x = [y(1)-0.1,y(1),y(2),y(3),y(4),y(5),y(5)+0.1]
-!call test_cubic_spline(y,x,cubic_spline_deriv,total_tests,passed_tests)
+call test_cubic_spline(y,x,cubic_spline_deriv,total_tests,passed_tests)
 call plot_spline(y,cubic_spline_deriv)
 
 write(*,*) "!---------------------------"

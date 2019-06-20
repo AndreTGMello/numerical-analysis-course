@@ -4,6 +4,7 @@
 *.o
 *.mod
 main
+a.out
 
 #########
 # Tests #
