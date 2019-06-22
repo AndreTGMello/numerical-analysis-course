@@ -28,11 +28,11 @@ allocate(x(4))
 
 y = linspace(1.0_wp,3.0_wp,3)
 x = [y(1)-0.1,y(1),y(2),y(3),y(3)+0.1]
-call test_linear_spline(y,x,linear_spline,total_tests,passed_tests)
+!call test_linear_spline(y,x,linear_spline,total_tests,passed_tests)
 
 y = linspace(200.42_wp,799.99_wp,3)
 x = [y(1)-0.1,y(1),y(2),y(3),y(3)+0.1]
-call test_linear_spline(y,x,linear_spline,total_tests,passed_tests)
+!call test_linear_spline(y,x,linear_spline,total_tests,passed_tests)
 
 write(*,*)
 write(*,*) "!----------------------------------"
@@ -42,13 +42,13 @@ write(*,*)
 
 y = linspace(1.0_wp,3.0_wp,3)
 x = [y(1)-0.1,y(1),y(2),y(3),y(3)+0.1]
-call test_linear_spline(y,x,linear_spline_deriv,total_tests,passed_tests)
-call plot_spline(y,linear_spline_deriv)
+!call test_linear_spline(y,x,linear_spline_deriv,total_tests,passed_tests)
+!call plot_spline(y,linear_spline_deriv)
 
 y = linspace(200.42_wp,799.99_wp,3)
 x = [y(1)-0.1,y(1),y(2),y(3),y(3)+0.1]
-call test_linear_spline(y,x,linear_spline_deriv,total_tests,passed_tests)
-call plot_spline(y,linear_spline_deriv)
+!call test_linear_spline(y,x,linear_spline_deriv,total_tests,passed_tests)
+!call plot_spline(y,linear_spline_deriv)
 
 deallocate(y)
 deallocate(x)
@@ -64,12 +64,12 @@ allocate(x(7))
 
 y = linspace(1.0_wp,5.0_wp,5)
 x = [y(1)-0.1,y(1),y(2),y(3),y(4),y(5),y(5)+0.1]
-call test_cubic_spline(y,x,cubic_spline,total_tests,passed_tests)
+!call test_cubic_spline(y,x,cubic_spline,total_tests,passed_tests)
 
 
 y = linspace(234.432_wp,987.789_wp,5)
 x = [y(1)-0.1,y(1),y(2),y(3),y(4),y(5),y(5)+0.1]
-call test_cubic_spline(y,x,cubic_spline,total_tests,passed_tests)
+!call test_cubic_spline(y,x,cubic_spline,total_tests,passed_tests)
 
 write(*,*)
 write(*,*) "!--------------------------------"
@@ -79,13 +79,22 @@ write(*,*)
 
 y = linspace(1.0_wp,5.0_wp,5)
 x = [y(1)-0.1,y(1),y(2),y(3),y(4),y(5),y(5)+0.1]
-call test_cubic_spline(y,x,cubic_spline_deriv,total_tests,passed_tests)
-call plot_spline(y,cubic_spline_deriv)
+!call test_cubic_spline(y,x,cubic_spline_deriv,total_tests,passed_tests)
+!call plot_spline(y,cubic_spline_deriv)
 
 y = linspace(234.432_wp,987.789_wp,5)
 x = [y(1)-0.1,y(1),y(2),y(3),y(4),y(5),y(5)+0.1]
-call test_cubic_spline(y,x,cubic_spline_deriv,total_tests,passed_tests)
-call plot_spline(y,cubic_spline_deriv)
+!call test_cubic_spline(y,x,cubic_spline_deriv,total_tests,passed_tests)
+!call plot_spline(y,cubic_spline_deriv)
+
+y = linspace(0.0_wp,1.0_wp,5)
+y(2) = 0.0_wp
+y(3) = 0.0_wp
+x = [y(1)-0.1,y(1),y(2),y(3),y(4),y(5),y(5)+0.1]
+call test_cubic_spline(y,x,cubic_spline,total_tests,passed_tests)
+!call plot_spline(y,cubic_spline_deriv)
+
+!call plot_new_cubic_spline(cubic_spline_basis)
 
 write(*,*) "!---------------------------"
 write(*,'(a,g14.6)') " !Total tests ", total_tests-1
@@ -169,6 +178,61 @@ subroutine test_cubic_spline(y,x,f,total_tests,passed_tests)
   end do
   call plot_spline(y, f)
 end subroutine test_cubic_spline
+
+subroutine plot_new_cubic_spline(spline)
+  real(wp), external :: spline
+  integer, parameter :: i = 101
+  integer, parameter :: n = 5
+  integer, parameter :: m = n+2
+  integer :: j
+  real(wp) :: y(m)
+  real(wp) :: x(i),fx(i),h
+  type(gpf):: gp
+
+  y = linspace(0.0_wp,1.0_wp,m)
+  h = y(2) - y(1)
+
+  x = linspace(y(1),y(3),i)
+  do j = 1,i
+    fx(j) = spline(x(j)/h) - 4*spline((x(j)+h)/h)
+  end do
+  call gp%title('B-Spline Phi_0')
+  call gp%options('set key top right; set grid')
+  call gp%plot(x,fx,'title "B(x)" with lines lt 1 lw 1')
+
+  x = linspace(y(1),y(4),i)
+  do j = 1,i
+    fx(j) = spline((x(j)-y(2))/h) - spline((x(j)+h)/h)
+  end do
+  call gp%title('B-Spline Phi_1')
+  call gp%options('set key top right; set grid')
+  call gp%plot(x,fx,'title "B(x)" with lines lt 1 lw 1')
+
+  x = linspace(y(1),y(5),i)
+  do j = 1,i
+    fx(j) = spline((x(j)-y(3))/h)
+  end do
+  call gp%title('B-Spline Phi_2')
+  call gp%options('set key top right; set grid')
+  call gp%plot(x,fx,'title "B(x)" with lines lt 1 lw 1')
+
+  x = linspace(y(m-3),y(m),i)
+  do j = 1,i
+    fx(j) = spline((x(j)-y(n+1))/h) - spline((x(j)-(n+2)*h)/h)
+  end do
+  call gp%title('B-Spline Phi_6')
+  call gp%options('set key top right; set grid')
+  call gp%plot(x,fx,'title "B(x)" with lines lt 1 lw 1')
+
+  x = linspace(y(m-2),y(m),i)
+  do j = 1,i
+    fx(j) = spline((x(j)-y(n+2))/h) - 4*spline((x(j)-(n+2)*h)/h)
+  end do
+  call gp%title('B-Spline Phi_7')
+  call gp%options('set key top right; set grid')
+  call gp%plot(x,fx,'title "B(x)" with lines lt 1 lw 1')
+
+end subroutine plot_new_cubic_spline
 
 subroutine plot_spline(y,spline)
   real(wp), external :: spline

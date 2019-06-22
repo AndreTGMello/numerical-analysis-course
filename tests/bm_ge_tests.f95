@@ -9,7 +9,7 @@ implicit none
 ! Variables
 !---------------
 
-integer :: i,j,k,l,m,n,ub,lb,ms,pad
+integer :: i,j,k,l,m,n,o,ub,lb,ms,pad
 real(wp) :: multiplier
 real(wp), allocatable :: b(:), x(:), y(:), A(:,:)
 type(col), allocatable :: Row(:)
@@ -32,14 +32,15 @@ allocate(b(ms))
 allocate(x(ms))
 allocate(Row(ms))
 
+m = ub
+o = -1
 do i = 1, ms
-  if ( i == 1 ) then
-      allocate(Row(i)%Col(ub+1))
-  elseif ( i == ms ) then
-      allocate(Row(i)%Col(lb+1))
-  else
-      allocate(Row(i)%Col(lb+ub+1))
+  if ( i <= lb+1 ) then
+    o = o + 1
+  elseif ( i > ms-ub ) then
+    m = m - 1
   end if
+  allocate(Row(i)%col(m+o+1))
 end do
 
 Row(1)%Col = [15, 7, 7]
@@ -54,14 +55,15 @@ call test_elimination(Row, b, ms, ub, lb)
 
 deallocate(b)
 deallocate(x)
+m = ub
+o = -1
 do i = 1, ms
-  if ( i == 1 ) then
-      deallocate(Row(i)%Col)
-  elseif ( i == ms ) then
-      deallocate(Row(i)%Col)
-  else
-      deallocate(Row(i)%Col)
+  if ( i <= lb+1 ) then
+    o = o + 1
+  elseif ( i > ms-ub ) then
+    m = m - 1
   end if
+  deallocate(Row(i)%col)
 end do
 deallocate(Row)
 
@@ -79,14 +81,15 @@ allocate(b(ms))
 allocate(x(ms))
 allocate(Row(ms))
 
+m = ub
+o = -1
 do i = 1, ms
-  if ( i == 1 ) then
-      allocate(Row(i)%Col(ub+1))
-  elseif ( i == ms ) then
-      allocate(Row(i)%Col(lb+1))
-  else
-      allocate(Row(i)%Col(lb+ub+1))
+  if ( i <= lb+1 ) then
+    o = o + 1
+  elseif ( i > ms-ub ) then
+    m = m - 1
   end if
+  allocate(Row(i)%col(m+o+1))
 end do
 
 Row(1)%Col = [25, 7, 7, 1, 9]
@@ -103,16 +106,69 @@ call test_elimination(Row, b, ms, ub, lb)
 
 deallocate(b)
 deallocate(x)
+m = ub
+o = -1
 do i = 1, ms
-  if ( i == 1 ) then
-      deallocate(Row(i)%Col)
-  elseif ( i == ms ) then
-      deallocate(Row(i)%Col)
-  else
-      deallocate(Row(i)%Col)
+  if ( i <= lb+1 ) then
+    o = o + 1
+  elseif ( i > ms-ub ) then
+    m = m - 1
   end if
+  deallocate(Row(i)%col)
 end do
 deallocate(Row)
+
+! -------
+! Test 3
+! -------
+! ub -> upper band
+! lb -> lower band
+ub = 3
+lb = 3
+! Square matrix size
+ms = 9
+
+allocate(b(ms))
+allocate(x(ms))
+allocate(Row(ms))
+
+m = ub
+o = -1
+do i = 1, ms
+  if ( i <= lb+1 ) then
+    o = o + 1
+  elseif ( i > ms-ub ) then
+    m = m - 1
+  end if
+  allocate(Row(i)%col(m+o+1))
+end do
+
+Row(1)%Col = [0.18750, 0.10078,-0.04688,-0.00234]
+Row(2)%Col = [0.10078, 0.24380,-0.03287,-0.05625,-0.00234]
+Row(3)%Col = [-0.04688,-0.03287, 0.18750,-0.03522,-0.05625,-0.00234]
+Row(4)%Col = [-0.00234,-0.05625,-0.03522, 0.18750,-0.03522,-0.05625,-0.00234]
+Row(5)%Col = [-0.00234,-0.05625,-0.03522, 0.18750,-0.03522,-0.05625,-0.00234]
+Row(6)%Col = [-0.00234,-0.05625,-0.03522, 0.18750,-0.03522,-0.05625,-0.00234]
+Row(7)%Col = [-0.00234,-0.05625,-0.03522, 0.18750,-0.03287,-0.04688]
+Row(8)%Col = [-0.00234,-0.05625,-0.03287, 0.24380, 0.10078]
+Row(9)%Col = [-0.00234,-0.04688, 0.10078, 0.18750]
+
+b = [-3.18305,-11.48596,-8.04394,6.70978,14.98292,6.70978,-8.04394,-11.48596,-3.18305]
+
+call test_elimination(Row, b, ms, ub, lb)
+
+deallocate(b)
+deallocate(x)
+do i = 1, ms
+  if ( i <= lb+1 ) then
+    o = o + 1
+  elseif ( i > ms-ub ) then
+    m = m - 1
+  end if
+  deallocate(Row(i)%col)
+end do
+deallocate(Row)
+
 
 contains
 
@@ -156,7 +212,6 @@ contains
 					A(i,k) =  0.0
 				end do
 			end if
-			write(*,*)
 		end do
 
 		write(*,*) "--- TEST BEGIN ---"
@@ -188,6 +243,9 @@ contains
 		write(*,fmt="(F10.5, 3X)") c
 		write(*,*) "--- x ---"
 		write(*,fmt="(F10.5, 3X)") y
+		write(*,*)
+		write(*,*)
+		write(*,*)
 	end subroutine test_elimination
 
 end program bm_ge_tests
