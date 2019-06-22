@@ -140,4 +140,76 @@ module bspline
       end if
     end function cubic_spline_deriv
 
+
+    !--------------------
+    ! New implementation
+    !--------------------
+    function cubic_spline_basis(x)
+      real(wp) :: cubic_spline_basis
+      real(wp), intent(in) :: x
+
+      if ( x <= -2.0 ) then
+        cubic_spline_basis = 0
+      elseif ( -2.0 < x .and. x <= -1.0 ) then
+        cubic_spline_basis = (1.0/4.0)*(2.0+x)**3
+      elseif ( -1.0 < x .and. x <= 0.0 ) then
+        cubic_spline_basis = (1.0/4.0)*((2.0+x)**3 - 4*(1.0+x)**3)
+      elseif ( 0.0 < x .and. x <= 1.0 ) then
+        cubic_spline_basis = (1.0/4.0)*((2.0-x)**3 - 4.0*(1-x)**3)
+      elseif ( 1.0 < x .and. x <= 2.0 ) then
+        cubic_spline_basis = (1.0/4.0)*(2.0-x)**3
+      elseif( 2.0 < x ) then
+        cubic_spline_basis = 0
+      end if
+
+    end function cubic_spline_basis
+
+    function cubic_spline_basis_deriv(x)
+      real(wp) :: cubic_spline_basis_deriv
+      real(wp), intent(in) :: x
+
+      if ( x <= -2.0 ) then
+        cubic_spline_basis_deriv = 0.0
+      elseif ( -2.0 < x .and. x <= -1.0 ) then
+        cubic_spline_basis_deriv = (1.0/4.0)*3.0*(2.0+x)**2
+      elseif ( -1.0 < x .and. x <= 0.0 ) then
+        cubic_spline_basis_deriv = -(1.0/4.0)*((9*x**2)+(12*x))
+      elseif ( 0.0 < x .and. x <= 1.0 ) then
+        cubic_spline_basis_deriv = (1.0/4.0)*(3*x*(3*x-4.0))
+      elseif ( 1.0 < x .and. x <= 2.0 ) then
+        cubic_spline_basis_deriv = -(1.0/4.0)*3.0*(2.0-x)**2
+      elseif( 2.0 < x ) then
+        cubic_spline_basis_deriv = 0.0
+      end if
+
+    end function cubic_spline_basis_deriv
+
+    function linear_spline_basis(x)
+      real(wp) :: linear_spline_basis
+      real(wp), intent(in) :: x
+
+      if ( x <= -1.0 .or. x >= 1.0 ) then
+        linear_spline_basis = 0.0
+      elseif ( x < 0.0 ) then
+        linear_spline_basis = (x+1.0)
+      elseif ( x < 1.0 ) then
+        linear_spline_basis = (1.0-x)
+      end if
+
+    end function linear_spline_basis
+
+    function linear_spline_basis_deriv(x)
+      real(wp) :: linear_spline_basis_deriv
+      real(wp), intent(in) :: x
+
+      if ( x <= -1.0 .or. x >= 1.0 ) then
+        linear_spline_basis_deriv = 0.0
+      elseif ( x < 0.0 ) then
+        linear_spline_basis_deriv = x
+      elseif ( x < 1.0 ) then
+        linear_spline_basis_deriv = -x
+      end if
+
+    end function linear_spline_basis_deriv
+
 end module bspline
