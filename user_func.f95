@@ -1,4 +1,4 @@
-module user_fun
+module user_func
   use utils
 
   implicit none
@@ -30,4 +30,4 @@ contains
     !u = (x-1.0)*x
   end function u
 
-end module user_fun
+end module user_func

@@ -211,7 +211,7 @@ end do
 ! ---------------------------
 ! Solving with cubic splines
 ! ---------------------------
-do i = 1, 1
+do i = 1, 2
   call solve_finite_elements(n(i),cubic_spline,cubic_spline_deriv,.true.,romberg_iterations,error)
   error_array_cubic(i) = error
 end do

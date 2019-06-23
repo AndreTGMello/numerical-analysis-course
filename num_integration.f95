@@ -1,22 +1,7 @@
 module num_integration
-  use utils, only : wp
+  use utils
 
   implicit none
-
-  type, abstract :: fun
-  contains
-    procedure(eval_iface), deferred :: eval
-  end type fun
-
-  interface
-    function eval_iface(self, x)
-      use utils, only : wp
-      import :: fun
-      class(fun), intent(in) :: self
-      real(wp), intent(in) :: x
-      real(wp) :: eval_iface
-    end function eval_iface
-  end interface
 
   contains
 

@@ -11,6 +11,24 @@ type col
   real(wp), allocatable :: Col(:)
 endtype col
 
+! Abstract `function` object
+! This will be used to make the numerical
+! Integration procedure more flexible
+type, abstract :: fun
+contains
+  procedure(eval_iface), deferred :: eval
+end type fun
+
+interface
+  function eval_iface(self, x)
+    import :: fun
+		import :: wp
+    class(fun), intent(in) :: self
+    real(wp), intent(in) :: x
+    real(wp) :: eval_iface
+  end function eval_iface
+end interface
+
 contains
 
 	! Identity (==) operations won't work with floating point
