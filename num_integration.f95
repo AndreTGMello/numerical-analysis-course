@@ -22,14 +22,14 @@ module num_integration
 
     function trapezoid(f,a,b,h)
       real(wp), intent(in) :: a,b,h
-      real(wp), external :: f
       integer :: i,j,steps
       real(wp) :: trapezoid
+      class(fun), intent(in) :: f
 
       steps = (b-a)/h
       trapezoid = 0
       do i = 1, steps
-        trapezoid = trapezoid + (f(a+(i-1)*h) + f(a+i*h))*h/2
+        trapezoid = trapezoid + (f%eval(a+(i-1)*h) + f%eval(a+i*h))*h/2
       end do
     end function trapezoid
 
