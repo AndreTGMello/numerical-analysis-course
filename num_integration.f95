@@ -21,10 +21,7 @@ module num_integration
     function romberg(f,a,b,k)
       real(wp), intent(in) :: a,b
       real(wp), allocatable :: r(:)
-
-!      real(wp), external :: f
       class(fun), intent(in) :: f
-
       real(wp) :: h
       integer, intent(in) :: k
       integer :: i,j,m,np
@@ -34,6 +31,13 @@ module num_integration
       allocate(r(k))
 
       r(1) = h*(f%eval(a)+f%eval(b))/2
+      write(*,*) "h ", h
+      write(*,*) "a ", a
+      write(*,*) "b ", b
+      write(*,*) "f(a) ", f%eval(a)
+      write(*,*) "f(b) ", f%eval(b)
+      write(*,*) "r(1) ", r(1)
+
       np = 1
       do i = 2,k
         h = h/2
@@ -49,6 +53,8 @@ module num_integration
         np = np*2
       end do
       romberg = r(1)
+      write(*,*) "r(end) ", r(1)
+      write(*,*)
     end function romberg
 
 end module num_integration

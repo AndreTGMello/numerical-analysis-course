@@ -24,7 +24,7 @@ write(*,*) "! Testing linear splines"
 write(*,*) "!-----------------------"
 write(*,*)
 
-call plot_linear_spline()
+!call plot_linear_spline()
 
 write(*,*)
 write(*,*) "!----------------------------------"
@@ -32,7 +32,7 @@ write(*,*) "! Testing linear spline derivatives"
 write(*,*) "!----------------------------------"
 write(*,*)
 
-call plot_linear_spline_deriv()
+!call plot_linear_spline_deriv()
 
 write(*,*)
 write(*,*) "!----------------------"
@@ -40,12 +40,12 @@ write(*,*) "! Testing cubic splines"
 write(*,*) "!----------------------"
 write(*,*)
 
-call plot_cubic_spline(cubic_spline_basis)
+!call plot_cubic_spline(cubic_spline_basis)
 
 write(*,*)
-write(*,*) "!----------------------------------"
-write(*,*) "! Testing linear spline derivatives"
-write(*,*) "!----------------------------------"
+write(*,*) "!---------------------------------"
+write(*,*) "! Testing cubic spline derivatives"
+write(*,*) "!---------------------------------"
 write(*,*)
 
 call plot_cubic_spline(cubic_spline_basis_deriv)

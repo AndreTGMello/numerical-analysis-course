@@ -53,11 +53,11 @@ contains
     real(wp) :: linear_spline_basis
     real(wp), intent(in) :: x
 
-    if ( x <= -1.0 .or. x >= 1.0 ) then
+    if ( x < -1.0 .or. x > 1.0 ) then
       linear_spline_basis = 0.0
-    elseif ( x < 0.0 ) then
+    elseif ( x <= 0.0 ) then
       linear_spline_basis = (x+1.0)
-    elseif ( x < 1.0 ) then
+    elseif ( x <= 1.0 ) then
       linear_spline_basis = (1.0-x)
     end if
 
