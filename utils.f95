@@ -96,4 +96,22 @@ contains
 		write(*,*)
 	end subroutine
 
+	subroutine print_band(Row,lb,ub)
+		integer :: i,j,pad,ms,lb,ub
+		type(col), allocatable, intent(in) :: Row(:)
+		ms = size(Row)
+		pad = 0
+		write(*,*)
+		write(*,*) "!-------------------"
+		write(*,*)
+		do i = 1, ms
+			do j = 1, size(Row(i)%col)
+				write(*, fmt="(F10.5, 3X)", advance="no") Row(i)%Col(j)
+			end do
+			write(*,*)
+		end do
+		write(*,*) "!-------------------"
+		write(*,*)
+	end subroutine
+
 end module utils
