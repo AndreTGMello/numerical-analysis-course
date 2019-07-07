@@ -1,5 +1,4 @@
 program bm_ge_tests
-use bm_ge
 use g_elimination
 use utils
 
@@ -13,10 +12,13 @@ integer :: i,j,k,l,m,n,o,ub,lb,ms,pad
 real(wp) :: multiplier
 real(wp), allocatable :: b(:), x(:), y(:), A(:,:)
 type(col), allocatable :: Row(:)
+integer :: passed_tests, total_tests
 
 !---------------
 ! Logic
 !---------------
+passed_tests = 0
+total_tests = 0
 
 ! -------
 ! Test 1
@@ -51,7 +53,7 @@ Row(5)%Col = [1, 3, 2, 4, 12, 3]
 Row(6)%Col = [2, 3, 1, 5, 13]
 b = [2, 1, 2, 4, 2, 6]
 
-call test_elimination(Row, b, ms, ub, lb)
+call test_elimination(Row, b, ms, ub, lb, total_tests, passed_tests)
 
 deallocate(b)
 deallocate(x)
@@ -102,7 +104,7 @@ Row(7)%Col = [2, 11, 1]
 Row(8)%Col = [2, 10]
 b = [2, 2, 2, 4, 2, 6, 7, 10]
 
-call test_elimination(Row, b, ms, ub, lb)
+call test_elimination(Row, b, ms, ub, lb, total_tests, passed_tests)
 
 deallocate(b)
 deallocate(x)
@@ -155,7 +157,7 @@ Row(9)%Col = [-0.00234,-0.04688, 0.10078, 0.18750]
 
 b = [-3.18305,-11.48596,-8.04394,6.70978,14.98292,6.70978,-8.04394,-11.48596,-3.18305]
 
-call test_elimination(Row, b, ms, ub, lb)
+call test_elimination(Row, b, ms, ub, lb, total_tests, passed_tests)
 
 deallocate(b)
 deallocate(x)
@@ -172,12 +174,16 @@ deallocate(Row)
 
 contains
 
-	subroutine test_elimination(Row,b,ms,ub,lb)
+	subroutine test_elimination(Row,b,ms,ub,lb,total_tests,passed_tests)
 		integer, intent(in) :: ub,lb,ms
+    integer, intent(inout) :: total_tests,passed_tests
 		type(col), allocatable, intent(inout) :: Row(:)
 		real(wp), allocatable, intent(inout) :: b(:)
 		integer :: i,j,k,l,m,n,pad
 		real(wp), allocatable :: c(:), x(:), y(:), A(:,:)
+    logical :: passed
+
+    passed = .true.
 
 		allocate(x(size(b)))
 		allocate(c(size(b)))
@@ -215,6 +221,7 @@ contains
 		end do
 
 		write(*,*) "--- TEST BEGIN ---"
+    write(*,'(A,I10)') "Test number ", total_tests+1
 		write(*,*)
 		write(*,*) "--- BANDED Matrix ---"
 		write(*,*) "--- Before Gaussian ---"
@@ -245,7 +252,69 @@ contains
 		write(*,fmt="(F10.5, 3X)") y
 		write(*,*)
 		write(*,*)
-		write(*,*)
+
+    ! Test matrix values
+    pad = 0
+		k = 0
+		do i = 1, ms
+			k = 0
+			if ( i <= lb+1 ) then
+				do j = 1, size(Row(i)%col)
+					k = k + 1
+          if ( .not. close(A(i,k),Row(i)%Col(j),1.0_wp*1e-3) ) then
+            passed = .false.
+          end if
+				end do
+				do j = 1, ms - size(Row(i)%col)
+					k = k + 1
+				end do
+			else
+				pad = pad + 1
+				do j = 1, pad
+					k = k + 1
+					A(i,k) =  0.0
+				end do
+				do j = 1, size(Row(i)%col)
+					k = k + 1
+          if ( .not. close(A(i,k),Row(i)%Col(j),1.0_wp*1e-3) ) then
+            passed = .false.
+          end if
+				end do
+				do j = pad+size(Row(i)%col), ms-1
+					k = k + 1
+				end do
+			end if
+		end do
+    if ( .not. passed ) then
+      write(*,*) "!Error on the banded matrix!"
+    end if
+
+    ! Test results
+    do i = 1, size(Row)
+      if ( .not. close(y(i),x(i),1.0_wp*1e-3) ) then
+        passed = .false.
+      end if
+    end do
+    if ( .not. passed ) then
+      write(*,*) "!Error on the solution!"
+    end if
+
+    if ( passed ) then
+      passed_tests = passed_tests + 1
+      write(*,*) "Test passed"
+    else
+      write(*,*) "!-----------!"
+      write(*,*) "!Test failed!"
+      write(*,*) "!-----------!"
+    end if
+    total_tests = total_tests + 1
+    write(*,*)
+    write(*,'(A)') "!------------------------!"
+		write(*,'(A,I10)') " Total tests: ", total_tests
+		write(*,'(A,I10)') " Tests passed:", passed_tests
+    write(*,'(A)') "!------------------------!"
+    write(*,*)
+    write(*,*)
 	end subroutine test_elimination
 
 end program bm_ge_tests
