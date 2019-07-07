@@ -47,12 +47,11 @@ module finite_elements
 
 contains
 
-  function test(x)
-    real(wp) :: test
-    real(wp), intent(in) :: x
-    test = 0.0
-  end function test
-
+  ! Cubic spline calculation
+  ! First two and last two basis
+  ! need to be calculated in a
+  ! different fashion from the
+  ! regular ones
   function s_eval(x,y,i,s)
     real(wp) :: s_eval
     real(wp) :: h
@@ -77,7 +76,6 @@ contains
     else
       s_eval = s( (x - y(i + 1) )/h )
     end if
-
   end function s_eval
 
   function inner_product_l_eval(self, x)
@@ -88,6 +86,7 @@ contains
     integer :: k
 
     h = self%y(2) - self%y(1)
+
     if ( self%flag ) then
       ! Basis i
       phi_i = s_eval(x,self%y,self%i,self%s)
@@ -95,8 +94,10 @@ contains
       phi_j = s_eval(x,self%y,self%j,self%s)
       ! Basis i derivative
       dphi_i = s_eval(x,self%y,self%i,self%ds)
+      dphi_i = dphi_i/h
       ! Basis j derivative
       dphi_j = s_eval(x,self%y,self%j,self%ds)
+      dphi_j = dphi_j/h
     else
       ! Basis i
       phi_i = self%s( (x-self%y( self%i+2 ) )/h )
@@ -104,23 +105,23 @@ contains
       phi_j = self%s( (x-self%y( self%j+2 ) )/h )
 
       ! Basis i deriv
-      if ( x == 0 ) then
+      if ( close(x,self%y(1),1.0_wp*1e-3) ) then
         dphi_i = 1.0/h
-      elseif ( x == size(self%y) ) then
+      elseif ( close(x,self%y(size(self%y)),1.0_wp*1e-3) ) then
         dphi_i = -1.0/h
       elseif ( x <= self%y( self%i+2 ) ) then
         dphi_i = 1.0/h
       elseif ( x <= self%y( self%i+3 ) ) then
         dphi_i = -1.0/h
       else
-        dphi_i = 0.0/h
+        dphi_i = 0.0
         !write(*,*) "Error ", x
       end if
 
       ! Basis j derivative
-      if ( x == 0 ) then
+      if ( close(x,self%y(1),1.0_wp*1e-3) ) then
         dphi_j = 1.0/h
-      elseif ( x == size(self%y) ) then
+      elseif ( close(x,self%y(size(self%y)),1.0_wp*1e-3) ) then
         dphi_j = -1.0/h
       elseif ( x <= self%y( self%j+2 ) ) then
         dphi_j = 1.0/h
@@ -141,7 +142,6 @@ contains
     inner_product_l_eval = &
       self%k(x) * dphi_i * dphi_j &
       + self%q(x) * phi_i * phi_j
-
   end function inner_product_l_eval
 
   function inner_product_eval(self, x)
@@ -217,20 +217,21 @@ contains
         !write(*,*) i
         !write(*,*) "phi_i ", phi_i
         !write(*,*) "a_i ", a(i+1)
-        estimated_function = estimated_function + a(i+1)*phi_i
+        estimated_function = estimated_function + phi_i*a(i+1)
       end do
       !write(*,*)
-      estimated_function = estimated_function*h**(2)
-      !estimated_function = estimated_function + estimated_function*h
     else
       do i = 0, size(a)-1
         phi_i = s( ( x-y( i+2 ) )/h )
-        !write(*,*) i
+        !write(*,*) "i ", i
+        !write(*,*) "x ", y(i+2)
         !write(*,*) "phi_i ", phi_i
         !write(*,*) "a_i ", a(i+1)
+        !write(*,*) "u_n ", estimated_function
+        !write(*,*)
         estimated_function = estimated_function + phi_i*a(i+1)
       end do
-      estimated_function = estimated_function*(1+h)
+      !write(*,*)
     end if
     !write(*,*)
   end function estimated_function
@@ -319,6 +320,7 @@ contains
           m = m - 1
         end if
         allocate(Row(i)%col(m+o+1))
+        Row(i)%col(m+o+1) = 0.0_wp
       end do
 
       ! Array for the result of the
@@ -327,6 +329,7 @@ contains
 
       ! Coefficients alpha
       allocate(coef(sp_dim))
+      coef = 0.0
 
       ! Stepsize
       h = 1.0_wp/(n+1.0_wp)
@@ -341,8 +344,9 @@ contains
         integration_range(i+1) = i*h
       end do
       write(*,*) "Integration range:"
-      !write(*,'(F10.5)') integration_range
-      !write(*,*)
+      write(*,'(F10.5)') integration_range(1:3)
+      write(*,*) "..."
+      write(*,'(F10.5)') integration_range(total_num_nodes-2:total_num_nodes)
 
       write(*,*) "Creating banded matrix"
       write(*,*) ". . ."
@@ -352,9 +356,6 @@ contains
       j_padding = 0
 
       do i = 0,sp_dim-1
-        call set_inner_product(ipo,integration_range,i,n,&
-                              f,base_spline,flag)
-
         ! Define integration limits
         if ( flag ) then
           node_index = (i+1) - fix_range
@@ -373,9 +374,12 @@ contains
           end if
           b = min(aux, omega)
         else
-          a = max(alpha, integration_range(i+1))
-          b = min(omega, integration_range(i+3))
+          a = integration_range(i+1)
+          b = integration_range(i+3)
         end if
+
+        call set_inner_product(ipo,integration_range,i,n,&
+                              f,base_spline,flag)
         ! Test
         !write(*,*) "i ", i
         !write(*,*) "node ", node_index
@@ -390,13 +394,6 @@ contains
           i_padding = i-lb
         end if
         do j = i,min(i+num_support_nodes,sp_dim-1)
-          ! Set values the inner product L,
-          ! according to the given formula
-          call set_inner_product_l(ipol,&
-                              integration_range,i,j,n,&
-                              k,q,&
-                              base_spline,base_spline_deriv,&
-                              flag)
 
           ! Define integration limits
           if ( flag ) then
@@ -416,17 +413,25 @@ contains
             end if
             b = min(aux, omega)
           else
-            a = max(alpha, integration_range(j+1))
-            b = min(omega, integration_range(i+3))
+            a = integration_range(j+1)
+            b = integration_range(i+3)
           end if
+
+          ! Set values the inner product L,
+          ! according to the given formula
+          call set_inner_product_l(ipol,&
+                              integration_range,i,j,n,&
+                              k,q,&
+                              base_spline,base_spline_deriv,&
+                              flag)
           ! Test
-          !write(*,*) "j ", j
-          !write(*,*) "node ", node_index
-          !write(*,'(A,F10.5)') "a ", a
-          !write(*,*) "i ", i
-          !write(*,*) "node ", node_index
-          !write(*,'(A,F10.5)') "b ", b
-          !write(*,*)
+          write(*,*) "j ", j
+          write(*,*) "node ", node_index
+          write(*,'(A,F10.5)') "a ", a
+          write(*,*) "i ", i
+          write(*,*) "node ", node_index
+          write(*,'(A,F10.5)') "b ", b
+          write(*,*)
 
           ! Integrate inner product using Romberg's
           ! Save result in the banded matrix structure
@@ -443,16 +448,21 @@ contains
         end do
         ! Test
         !call pprint_band(Row,lb,ub)
+        !call print_band(Row,lb,ub)
       end do
       write(*,*) "Banded matrix creation complete"
       write(*,*)
 
       ! Test
       !call pprint_band(Row,lb,ub)
-      !write(*,*)
+      write(*,*) "A"
+      call print_band(Row,lb,ub)
+      write(*,*)
       !write(*,'(F10.5)') coef
       !write(*,*)
-      !write(*,'(F10.5)') f_phi
+      write(*,*) "b"
+      write(*,*)
+      write(*,'(F10.5)') f_phi
 
       write(*,*) "Performing gaussian elimination"
       write(*,*) ". . ."
@@ -462,6 +472,7 @@ contains
 
       ! Test
       !call pprint_band(Row,lb,ub)
+      !call print_band(Row,lb,ub)
       !write(*,*)
       !write(*,'(F10.5)') coef
       !write(*,*)
